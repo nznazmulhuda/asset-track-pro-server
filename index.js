@@ -8,7 +8,12 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(
+    cors({
+        origin: ["http://localhost:3000"],
+        credentials: true,
+    }),
+);
 app.use(express.json());
 
 // server configuration
@@ -24,6 +29,21 @@ const client = new MongoClient(uri, {
 async function run() {
     try {
         await client.connect(); // connect
+
+        const UserDB = client.db("AssetTrackPro").collection("users");
+
+        // User Services
+        app.get("/user", async (req, res) => {
+            const result = await UserDB.find({}).toArray();
+            res.send(result);
+        });
+
+        app.post("/user", async (req, res) => {
+            const user = req.body;
+            const result = await UserDB.insertOne(user);
+            res.send(result);
+            // console.log(req.body);
+        });
 
         await client.db("admin").command({ ping: 1 });
         console.log(
