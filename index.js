@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 
@@ -62,7 +62,13 @@ async function run() {
 
         /**************************** User Services ******************/
         app.get("/user", async (req, res) => {
-            const result = await UserDB.find({}).toArray();
+            const email = req.query.email;
+            if (!email) {
+                const result = await UserDB.find({}).toArray();
+                return res.send(result);
+            }
+
+            const result = await UserDB.findOne({ email: email });
             res.send(result);
         });
 
@@ -70,6 +76,20 @@ async function run() {
             const user = req.body;
             const result = await UserDB.insertOne(user);
             res.send(result);
+        });
+
+        app.put("/user", async (req, res) => {
+            const user = req.body;
+            const result = await UserDB.updateOne(
+                {
+                    email: "akhirulislam@gmail.com",
+                },
+                {
+                    $addToSet: { employee: { $each: [user] } },
+                },
+            );
+            res.send(result);
+            // console.log(user);
         });
 
         // user role service
@@ -244,10 +264,16 @@ async function run() {
 
         /************************** Employee Services ******************/
         app.get("/employee", async (req, res) => {
-            const result = await UserDB.find({
-                $and: [{ role: "employee" }, { company: "notAffiliated" }],
-            }).toArray();
+            const id = req.query.id;
 
+            if (!id) {
+                const result = await UserDB.find({
+                    $and: [{ role: "employee" }, { company: "notAffiliated" }],
+                }).toArray();
+
+                return res.send(result);
+            }
+            const result = await UserDB.findOne({ _id: new ObjectId(id) });
             res.send(result);
         });
 
