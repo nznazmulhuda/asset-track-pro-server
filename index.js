@@ -240,6 +240,17 @@ async function run() {
             res.send(result);
         });
 
+        /********************** Asset Services done ********************/
+
+        /************************** Employee Services ******************/
+        app.get("/employee", async (req, res) => {
+            const result = await UserDB.find({
+                $and: [{ role: "employee" }, { company: "notAffiliated" }],
+            }).toArray();
+
+            res.send(result);
+        });
+
         await client.db("admin").command({ ping: 1 });
         console.log(
             "Pinged your deployment. You successfully connected to MongoDB!",
