@@ -275,22 +275,132 @@ async function run() {
 
         app.get("/request", async (req, res) => {
             const email = req.query.email;
-            const allResult = await RequestDB.find().toArray();
-            const result = allResult.filter(
-                (item) => item.rowData.companyEmail === email,
-            );
-            res.send(result);
+            const search = req.query.search;
+            const status = req.query.status;
+            const type = req.query.type;
+            const clientMail = req.query.clientMail;
+
+            if (email) {
+                const allResult = await RequestDB.find().toArray();
+                const result = allResult.filter(
+                    (item) => item.rowData.companyEmail === email,
+                );
+                res.send(result);
+                return;
+            }
+
+            if (search === "null" || !search) {
+                if (type === "null" && status === "null") {
+                    // if no type, status is specified
+                    const allResult = await RequestDB.find().toArray();
+                    const result = allResult.filter(
+                        (item) => item.email === clientMail,
+                    );
+                    return res.send(result);
+                }
+
+                // if only type is specified
+                else if (type !== "null" && status === "null") {
+                    const allData = await RequestDB.find().toArray();
+                    const allResult = allData.filter(
+                        (item) => item.email === email,
+                    );
+                    result = allResult.filter(
+                        (item) => item.rowData.assetType === type,
+                    );
+                    return res.send(result);
+                }
+
+                // if only status is specified
+                else if (type === "null" && status !== "null") {
+                    const allData = await RequestDB.find().toArray();
+                    const allResult = allData.filter(
+                        (item) => item.email === email,
+                    );
+                    result = allResult.filter((item) => item.status === status);
+                    return res.send(result);
+                }
+
+                // if status and type are specified
+                else if (type !== "null" && status !== "null") {
+                    const allData = await RequestDB.find().toArray();
+                    const allResult = allData.filter(
+                        (item) => item.email === email,
+                    );
+                    result = allResult.filter(
+                        (item) =>
+                            item.rowData.assetType === type &&
+                            item.status === status,
+                    );
+                    return res.send(result);
+                }
+            }
+
+            // if search is specified
+            else {
+                const agg = [
+                    {
+                        $search: {
+                            index: "requestSearch",
+                            text: {
+                                query: search,
+                                path: {
+                                    wildcard: "*",
+                                },
+                                fuzzy: {},
+                            },
+                        },
+                    },
+                ];
+
+                const cursor = RequestDB.aggregate(agg);
+                const allData = await cursor.toArray();
+                const searchResult = allData.filter(
+                    (item) => item.email === email,
+                );
+
+                if (type === "null" && status === "null") {
+                    // if no type, status is specified
+                    result = searchResult;
+                    return res.send(result);
+                }
+
+                // if only type is specified
+                else if (type !== "null" && status === "null") {
+                    result = searchResult.filter(
+                        (item) => item.rowData.assetType === type,
+                    );
+                    return res.send(result);
+                }
+
+                // if only status is specified
+                else if (type === "null" && status !== "null") {
+                    result = searchResult.filter(
+                        (item) => item.status === status,
+                    );
+                    return res.send(result);
+                }
+
+                // if status and type are specified
+                else if (type !== "null" && status !== "null") {
+                    result = searchResult.filter(
+                        (item) =>
+                            item.rowData.assetType === type &&
+                            item.status === status,
+                    );
+                    return res.send(result);
+                }
+            }
         });
 
         app.put("/request", async (req, res) => {
             const id = req.query.id;
-            const edit = Boolean(req.query.edit);
             const status = req.body.status;
-            console.log(status);
+            const approvedTime = req.body.approvedTime;
 
             const result = await RequestDB.updateOne(
                 { _id: new ObjectId(id) },
-                { $set: { status: status } },
+                { $set: { status: status, approvedTime: approvedTime } },
             );
             res.send(result);
         });
