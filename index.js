@@ -11,7 +11,7 @@ const port = process.env.PORT || 5000;
 // middleware
 app.use(
     cors({
-        origin: ["http://localhost:3000"],
+        origin: ["http://localhost:3000", "https://asset-track-pro.web.app"],
         credentials: true,
     }),
 );
@@ -45,8 +45,6 @@ const client = new MongoClient(uri, {
 });
 async function run() {
     try {
-        await client.connect(); // connect
-
         // all database and collection
         const UserDB = client.db("AssetTrackPro").collection("users");
         const AssetDB = client.db("AssetTrackPro").collection("assets");
@@ -57,8 +55,6 @@ async function run() {
             const token = jwt.sign(user, process.env.SECRET_KEY, {
                 expiresIn: "1h",
             });
-
-            console.log(token);
         });
 
         /**************************** User Services ******************/
@@ -427,12 +423,8 @@ async function run() {
             const result = await UserDB.findOne({ _id: new ObjectId(id) });
             res.send(result);
         });
-
-        await client.db("admin").command({ ping: 1 });
-        console.log(
-            "Pinged your deployment. You successfully connected to MongoDB!",
-        );
     } finally {
+        // hello
     }
 }
 run().catch(console.dir);
@@ -443,6 +435,4 @@ app.get("/", (req, res) => {
 });
 
 // Listening
-app.listen(port, () => {
-    console.log(`listening at ${port}`);
-});
+app.listen(port);
