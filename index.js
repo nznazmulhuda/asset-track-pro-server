@@ -273,6 +273,28 @@ async function run() {
             res.send(result);
         });
 
+        app.get("/request", async (req, res) => {
+            const email = req.query.email;
+            const allResult = await RequestDB.find().toArray();
+            const result = allResult.filter(
+                (item) => item.rowData.companyEmail === email,
+            );
+            res.send(result);
+        });
+
+        app.put("/request", async (req, res) => {
+            const id = req.query.id;
+            const edit = Boolean(req.query.edit);
+            const status = req.body.status;
+            console.log(status);
+
+            const result = await RequestDB.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: { status: status } },
+            );
+            res.send(result);
+        });
+
         app.post("/request", async (req, res) => {
             const request = req.body;
             const result = await RequestDB.insertOne(request);
