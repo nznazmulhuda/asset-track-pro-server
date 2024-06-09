@@ -80,16 +80,28 @@ async function run() {
 
         app.put("/user", async (req, res) => {
             const user = req.body;
+            const modify = req.query.modify;
+            if (!Boolean(modify)) {
+                const result = await UserDB.updateOne(
+                    {
+                        email: "akhirulislam@gmail.com",
+                    },
+                    {
+                        $addToSet: { employee: { $each: [user] } },
+                    },
+                );
+                return res.send(result);
+            }
+
             const result = await UserDB.updateOne(
                 {
                     email: "akhirulislam@gmail.com",
                 },
                 {
-                    $addToSet: { employee: { $each: [user] } },
+                    $pull: { employee: user },
                 },
             );
-            res.send(result);
-            // console.log(user);
+            return res.send(result);
         });
 
         // user role service
