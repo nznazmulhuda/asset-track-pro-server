@@ -17,6 +17,22 @@ app.use(
 );
 app.use(express.json());
 
+// custom middleware
+const verifyToken = async (req, res, next) => {
+    const token = req.body.token;
+    if (!token) {
+        return res.status(401).send({ message: "unauthorized access" });
+    }
+
+    jwt.verify(token, process.env.SECRET_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: "unauthorized access" });
+        }
+        req.user = decoded;
+        next();
+    });
+};
+
 // server configuration
 const uri = `mongodb+srv://${process.env.DB_USERNAME}:${process.env.DB_PASSWORD}@cluster0.pbmq8lu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -34,6 +50,15 @@ async function run() {
         // all database and collection
         const UserDB = client.db("AssetTrackPro").collection("users");
         const AssetDB = client.db("AssetTrackPro").collection("assets");
+        /**************************** JWT Servicess ******************/
+        app.post("/token", async (req, res) => {
+            const user = req.body;
+            const token = jwt.sign(user, process.env.SECRET_KEY, {
+                expiresIn: "1h",
+            });
+
+            console.log(token);
+        });
 
         /**************************** User Services ******************/
         app.get("/user", async (req, res) => {
@@ -63,7 +88,6 @@ async function run() {
             const status = req.query.status;
             const type = req.query.type;
             let result;
-            console.log(status);
 
             if (search === "null" || !search) {
                 if (sort === "null" && type === "null" && status === "null") {
@@ -78,7 +102,10 @@ async function run() {
                     status === "null"
                 ) {
                     result = await AssetDB.find({
-                        productType: type,
+                        productType:
+                            type === "returnable"
+                                ? "returnable"
+                                : "non-returnable",
                     }).toArray();
                     return res.send(result);
                 }
@@ -153,7 +180,10 @@ async function run() {
                         }).toArray();
                     }
                 }
-            } else {
+            }
+
+            // if search is specified
+            else {
                 const agg = [
                     {
                         $search: {
@@ -197,6 +227,8 @@ async function run() {
                     res.send(searchResult);
                     return;
                 }
+                res.send(searchResult);
+                return;
             }
 
             return res.send(result);
