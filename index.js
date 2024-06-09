@@ -50,6 +50,7 @@ async function run() {
         // all database and collection
         const UserDB = client.db("AssetTrackPro").collection("users");
         const AssetDB = client.db("AssetTrackPro").collection("assets");
+        const RequestDB = client.db("AssetTrackPro").collection("requests");
         /**************************** JWT Servicess ******************/
         app.post("/token", async (req, res) => {
             const user = req.body;
@@ -269,6 +270,12 @@ async function run() {
         app.post("/asset", async (req, res) => {
             const asset = req.body;
             const result = await AssetDB.insertOne(asset);
+            res.send(result);
+        });
+
+        app.post("/request", async (req, res) => {
+            const request = req.body;
+            const result = await RequestDB.insertOne(request);
             res.send(result);
         });
 
